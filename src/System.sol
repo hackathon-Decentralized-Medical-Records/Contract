@@ -56,4 +56,6 @@ contract System is ReentrancyGuard {
     function getUserToContract(address user) public view returns (address) {
         return s_userToContract[user];
     }
+
+    function newMedicalMaterial() external {}
 }

@@ -3,10 +3,8 @@ pragma solidity ^0.8.25;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {System} from "./System.sol";
-import {IRole} from "./interfaces/IRole.sol";
-
 // Layout of Contract:
 // version
 // imports
@@ -28,13 +26,11 @@ import {IRole} from "./interfaces/IRole.sol";
 // private
 // view & pure functions
 
-contract Role is Ownable, ReentrancyGuard, IRole {
+contract Role is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     /**
      * Error
      */
     error Role__improperRole(address user, uint8 roleType);
-    error Role__invalidAppointedTime(uint256 roleType);
-    error Role__InvalidAppointeeContractAddress();
 
     /**
      * Type declarations
@@ -46,37 +42,50 @@ contract Role is Ownable, ReentrancyGuard, IRole {
         DATA
     }
 
+    struct MedicalInfo {
+        string metaData;
+        uint256 createTimeSinceEpoch;
+        address creatorAddress;
+    }
+
     /**
      * State Variables
      */
     RoleType private immutable i_roleType;
     address private s_systemAddress;
+    mapping(uint256 tokenId => MedicalInfo) private s_tokenIdToMedicalInfo;
+    uint256 private s_tokenCounter;
+
+    /**
+     * Events
+     */
+    event Role__MaterialsMinted(address sender, uint256 tokenId);
 
     /**
      * Modifier
      */
-    modifier patientOnly() {
+    modifier onlyPatient() {
         if (i_roleType != RoleType.PATIENT) {
             revert Role__improperRole(msg.sender, uint8(i_roleType));
         }
         _;
     }
 
-    modifier doctorOnly() {
+    modifier onlyDoctor() {
         if (i_roleType != RoleType.DOCTOR) {
             revert Role__improperRole(msg.sender, uint8(i_roleType));
         }
         _;
     }
 
-    modifier serviceOnly() {
+    modifier onlyService() {
         if (i_roleType != RoleType.SERVICE) {
             revert Role__improperRole(msg.sender, uint8(i_roleType));
         }
         _;
     }
 
-    modifier dataOnly() {
+    modifier onlyData() {
         if (i_roleType != RoleType.DATA) {
             revert Role__improperRole(msg.sender, uint8(i_roleType));
         }
@@ -86,7 +95,11 @@ contract Role is Ownable, ReentrancyGuard, IRole {
     /**
      * Functions
      */
-    constructor(address user, address systemAddress, uint8 roleType) payable Ownable(user) {
+    constructor(address user, address systemAddress, uint8 roleType)
+        payable
+        ERC721("Medical Materials", "MM")
+        Ownable(user)
+    {
         require(uint8(type(RoleType).min) <= roleType && roleType <= uint8(type(RoleType).max), "Invalid role type");
         i_roleType = RoleType(roleType);
         s_systemAddress = systemAddress;
@@ -96,35 +109,18 @@ contract Role is Ownable, ReentrancyGuard, IRole {
 
     receive() external payable {}
 
-    /**
-     * @dev Patient can only appoint diagnosis
-     */
-    function appointDiagnosisRequest(address appointee, uint256 appointedTime)
-        public
-        patientOnly
-        nonReentrant
-        returns (uint256)
-    {
-        address appointeeContractAddress = System(s_systemAddress).getUserToContract(appointee);
-        if (appointeeContractAddress == address(0)) {
-            revert Role__InvalidAppointeeContractAddress();
-        }
-        (bool success, uint256 validTimeSinceEpoch) =
-            IRole(appointeeContractAddress).appointDiagnosisCheck(appointedTime);
-        //FIXME
-        if (!success) {
-            return validTimeSinceEpoch;
-        } else {
-            return 0;
-        }
+    function safeMint(string memory uri) public onlyOwner onlyPatient {
+        uint256 tokenId = s_tokenCounter++;
+        _safeMint(msg.sender, tokenId);
+        _setTokenURI(tokenId, uri);
+        emit Role__MaterialsMinted(msg.sender, tokenId);
     }
 
-    //TODO: Appointment data storage ?
-    function appointDiagnosisCheck(uint256 appointedTime) public doctorOnly nonReentrant returns (bool, uint256) {
-        if (block.timestamp >= appointedTime) {
-            revert Role__invalidAppointedTime(appointedTime);
-        }
-        // FIXME
-        return (true, block.timestamp);
+    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) returns (string memory) {
+        return super.tokenURI(tokenId);
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage) returns (bool) {
+        return super.supportsInterface(interfaceId);
     }
 }
