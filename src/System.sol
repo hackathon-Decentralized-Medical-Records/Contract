@@ -2,6 +2,7 @@
 pragma solidity ^0.8.25;
 
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {AggregatorV3Interface} from "@chainlink-brownie-contracts/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import {Role} from "./Role.sol";
 
 // Layout of Contract:
@@ -36,23 +37,37 @@ contract System is ReentrancyGuard {
         DATA
     }
 
+    struct FundInfo {
+        address userAddress;
+        uint256 startTimeSinceEpoch;
+        uint256 requiredAmountInWei;
+        uint256 actualAmountInWei;
+        uint256 tempAmountInWei;
+        uint256 endTimeSinceEpoch;
+    }
+
     /**
      * State Variables
      */
     mapping(address user => address) private s_userToContract;
     mapping(address user => RoleType) private s_userToRoleType;
-    mapping(address user => uint256) private s_needFund;
+    FundInfo[] private s_fundInfo;
+    uint256 s_fundInfoCounter;
+    AggregatorV3Interface private s_priceFeed;
 
     /**
      * Events
      */
     event System__NewUserContractAdded(address indexed user, address indexed contractAddress, uint8 indexed roleType);
     event System__NewUserAdded(address indexed user, uint8 indexed roleType);
+    event System__NewFundRequestRegistered(uint256 indexed fundInfoIndex, address indexed user, uint256 amountInUsd, uint80 indexed roundId);
 
     /**
      * Functions
      */
-    constructor() {}
+    constructor(address PriceFeed) {
+        s_priceFeed = AggregatorV3Interface(PriceFeed);
+    }
 
     /**
      * frontend ABI
@@ -81,6 +96,15 @@ contract System is ReentrancyGuard {
         if(s_userToContract[user] != contractAddress) {
             revert();
         }
-        s_needFund[user] = amountInUsd;
+        FundInfo memory fundInfo;
+        fundInfo.userAddress = user;
+        fundInfo.startTimeSinceEpoch = block.timestamp;
+        (uint80 roundId, int256 answer, , , ) = s_priceFeed.latestRoundData();
+        fundInfo.requiredAmountInWei = uint256(answer) * 1e18 * amountInUsd / uint256(s_priceFeed.decimals());
+        fundInfo.endTimeSinceEpoch = 0;
+        
+        s_fundInfo.push(fundInfo);
+        s_fundInfoCounter++;
+        emit System__NewFundRequestRegistered(s_fundInfoCounter - 1, msg.sender, amountInUsd, roundId);
     }
 }
