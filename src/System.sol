@@ -60,7 +60,10 @@ contract System is ReentrancyGuard {
      */
     event System__NewUserContractAdded(address indexed user, address indexed contractAddress, uint8 indexed roleType);
     event System__NewUserAdded(address indexed user, uint8 indexed roleType);
-    event System__NewFundRequestRegistered(uint256 indexed fundInfoIndex, address indexed user, uint256 amountInUsd, uint80 indexed roundId);
+    event System__NewFundRegistered(uint256 indexed fundInfoIndex, address user, uint256 amountInUsd, uint80 indexed roundId);
+    event System__DonationLimitReached(uint256 indexed index, address indexed user, uint256 amountInWei);
+    event System__NewDonation(uint256 indexed index, address user, address indexed sender, uint256 amountInWei);
+    event System__WithdrawFund(uint256 indexed index, address indexed user, uint256 amountInWei);
 
     /**
      * Functions
@@ -105,6 +108,29 @@ contract System is ReentrancyGuard {
         
         s_fundInfo.push(fundInfo);
         s_fundInfoCounter++;
-        emit System__NewFundRequestRegistered(s_fundInfoCounter - 1, msg.sender, amountInUsd, roundId);
+        emit System__NewFundRegistered(s_fundInfoCounter - 1, msg.sender, amountInUsd, roundId);
+    }
+
+    function donation(uint256 index, address user) public payable {
+        require(s_fundInfo[index].userAddress == user, "Index to User doesn't match.");
+        s_fundInfo[index].actualAmountInWei += msg.value;
+        s_fundInfo[index].tempAmountInWei += msg.value;
+        emit System__NewDonation(index, user, msg.sender, msg.value);
+        if(s_fundInfo[index].actualAmountInWei >= s_fundInfo[index].requiredAmountInWei) {
+            s_fundInfo[index].endTimeSinceEpoch = block.timestamp;
+            emit System__DonationLimitReached(index, user, s_fundInfo[index].actualAmountInWei);
+        }
+    }
+
+    function withdrawFund(uint256 index) public payable{
+        require(s_fundInfo[index].userAddress == msg.sender , "user don't match msg.sender");
+        require(s_userToContract[s_fundInfo[index].userAddress] != address(0), "user don't have contract");
+        uint256 tempWithdrawAmountInWei = s_fundInfo[index].tempAmountInWei;
+        s_fundInfo[index].tempAmountInWei = 0;
+        (bool success, )= payable(s_fundInfo[index].userAddress).call{value: tempWithdrawAmountInWei}("");
+        if(!success) {
+            revert();
+        }
+        emit System__WithdrawFund(index, msg.sender, tempWithdrawAmountInWei);
     }
 }
