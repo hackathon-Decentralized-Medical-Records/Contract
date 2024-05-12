@@ -5,23 +5,12 @@ import {VRFCoordinatorV2Mock} from "../test/mocks/VRFCoordinatorV2Mock.sol";
 import {LinkToken} from "../test/mocks/LinkToken.sol";
 import {MockV3Aggregator} from "../test/mocks/MockV3Aggregator.sol";
 import {Script} from "forge-std/Script.sol";
+import {LibTypeDef} from "../src/utils/LibTypeDef.sol";
 
 contract HelperConfig is Script {
-    NetworkConfig public activeNetworkConfig;
+    LibTypeDef.NetworkConfig public activeNetworkConfig;
 
-    struct NetworkConfig {
-        uint64 subscriptionId;
-        bytes32 gasLane;
-        uint256 automationUpdateInterval;
-        uint32 callbackGasLimit;
-        address vrfCoordinatorV2;
-        address link;
-        uint256 deployerKey;
-        address priceFeed;
-    }
-
-     uint256 public DEFAULT_ANVIL_PRIVATE_KEY =
-         0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+    uint256 public DEFAULT_ANVIL_PRIVATE_KEY = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
 
     event HelperConfig__CreatedMockVRFCoordinator(address vrfCoordinator);
 
@@ -33,12 +22,8 @@ contract HelperConfig is Script {
         }
     }
 
-    function getMainnetEthConfig()
-        public
-        view
-        returns (NetworkConfig memory mainnetNetworkConfig)
-    {
-        mainnetNetworkConfig = NetworkConfig({
+    function getMainnetEthConfig() public view returns (LibTypeDef.NetworkConfig memory mainnetNetworkConfig) {
+        mainnetNetworkConfig = LibTypeDef.NetworkConfig({
             subscriptionId: 0, // If left as 0, our scripts will create one!
             gasLane: 0x9fe0eebf5e446e3c998ec9bb19951541aee00bb90ea201ae456421a2ded86805,
             automationUpdateInterval: 30, // 30 seconds
@@ -50,12 +35,8 @@ contract HelperConfig is Script {
         });
     }
 
-    function getSepoliaEthConfig()
-        public
-        view
-        returns (NetworkConfig memory sepoliaNetworkConfig)
-    {
-        sepoliaNetworkConfig = NetworkConfig({
+    function getSepoliaEthConfig() public view returns (LibTypeDef.NetworkConfig memory sepoliaNetworkConfig) {
+        sepoliaNetworkConfig = LibTypeDef.NetworkConfig({
             subscriptionId: 0, // If left as 0, our scripts will create one!
             gasLane: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c,
             automationUpdateInterval: 30, // 30 seconds
@@ -63,14 +44,11 @@ contract HelperConfig is Script {
             vrfCoordinatorV2: 0x8103B0A8A00be2DDC778e6e7eaa21791Cd364625,
             link: 0x779877A7B0D9E8603169DdbD7836e478b4624789,
             deployerKey: vm.envUint("PRIVATE_KEY"),
-            priceFeed:0x694AA1769357215DE4FAC081bf1f309aDC325306
+            priceFeed: 0x694AA1769357215DE4FAC081bf1f309aDC325306
         });
     }
 
-    function getOrCreateAnvilEthConfig()
-        public
-        returns (NetworkConfig memory anvilNetworkConfig)
-    {
+    function getOrCreateAnvilEthConfig() public returns (LibTypeDef.NetworkConfig memory anvilNetworkConfig) {
         // Check to see if we set an active network config
         if (activeNetworkConfig.vrfCoordinatorV2 != address(0)) {
             return activeNetworkConfig;
@@ -80,10 +58,7 @@ contract HelperConfig is Script {
         uint96 gasPriceLink = 1e9;
 
         vm.startBroadcast(DEFAULT_ANVIL_PRIVATE_KEY);
-        VRFCoordinatorV2Mock vrfCoordinatorV2Mock = new VRFCoordinatorV2Mock(
-            baseFee,
-            gasPriceLink
-        );
+        VRFCoordinatorV2Mock vrfCoordinatorV2Mock = new VRFCoordinatorV2Mock(baseFee, gasPriceLink);
 
         LinkToken link = new LinkToken();
 
@@ -91,11 +66,9 @@ contract HelperConfig is Script {
         MockV3Aggregator mockV3Aggregator = new MockV3Aggregator(8, 3e11);
         vm.stopBroadcast();
 
-        emit HelperConfig__CreatedMockVRFCoordinator(
-            address(vrfCoordinatorV2Mock)
-        );
+        emit HelperConfig__CreatedMockVRFCoordinator(address(vrfCoordinatorV2Mock));
 
-        anvilNetworkConfig = NetworkConfig({
+        anvilNetworkConfig = LibTypeDef.NetworkConfig({
             subscriptionId: 0, // If left as 0, our scripts will create one!
             gasLane: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c, // doesn't really matter
             automationUpdateInterval: 30, // 30 seconds

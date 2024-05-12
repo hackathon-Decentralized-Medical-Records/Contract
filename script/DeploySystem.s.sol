@@ -11,7 +11,7 @@ contract DeploySystem is Script {
     function run() external returns (System) {
         helperConfig = new HelperConfig();
 
-        (, , , , , , , address priceFeed) = helperConfig.activeNetworkConfig();
+        (,,,,,,, address priceFeed) = helperConfig.activeNetworkConfig();
         vm.startBroadcast();
         System system = new System(priceFeed);
         vm.stopBroadcast();

@@ -6,6 +6,8 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {System} from "./System.sol";
+import {LibTypeDef} from "../src/utils/LibTypeDef.sol";
+
 // Layout of Contract:
 // version
 // imports
@@ -39,22 +41,11 @@ contract Role is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     /**
      * Type declarations
      */
-    enum RoleType {
-        PATIENT,
-        DOCTOR,
-        SERVICE,
-        DATA
-    }
-
-    struct Medicalcord {
-        mapping(uint256 index => address) indexToProvider;
-        uint256 createTimeSinceEpoch;
-    }
 
     /**
      * State Variables
      */
-    RoleType private immutable i_roleType;
+    LibTypeDef.RoleType private immutable i_roleType;
     address private s_systemAddress;
     uint256 private s_tokenCounter;
     bool private s_needFund;
@@ -93,28 +84,28 @@ contract Role is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     }
 
     modifier onlyPatient() {
-        if (i_roleType != RoleType.PATIENT) {
+        if (i_roleType != LibTypeDef.RoleType.PATIENT) {
             revert Role__improperRole(msg.sender, uint8(i_roleType));
         }
         _;
     }
 
     modifier onlyDoctor() {
-        if (i_roleType != RoleType.DOCTOR) {
+        if (i_roleType != LibTypeDef.RoleType.DOCTOR) {
             revert Role__improperRole(msg.sender, uint8(i_roleType));
         }
         _;
     }
 
     modifier onlyService() {
-        if (i_roleType != RoleType.SERVICE) {
+        if (i_roleType != LibTypeDef.RoleType.SERVICE) {
             revert Role__improperRole(msg.sender, uint8(i_roleType));
         }
         _;
     }
 
     modifier onlyData() {
-        if (i_roleType != RoleType.DATA) {
+        if (i_roleType != LibTypeDef.RoleType.DATA) {
             revert Role__improperRole(msg.sender, uint8(i_roleType));
         }
         _;
@@ -123,13 +114,15 @@ contract Role is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     /**
      * Functions
      */
-    constructor(address user, address systemAddress, uint8 roleType)
+    constructor(address user, address systemAddress, LibTypeDef.RoleType roleType)
         payable
         ERC721("Medical Materials", "MM")
         Ownable(user)
     {
-        require(type(RoleType).min <= RoleType(roleType) && RoleType(roleType) <= type(RoleType).max, "Invalid role type");
-        i_roleType = RoleType(roleType);
+        require(
+            type(LibTypeDef.RoleType).min <= roleType && roleType <= type(LibTypeDef.RoleType).max, "Invalid role type"
+        );
+        i_roleType = roleType;
         s_systemAddress = systemAddress;
     }
 
@@ -159,7 +152,13 @@ contract Role is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
         _setTokenURI(tokenId, uri);
     }
 
-    function tokenURI(uint256 tokenId) public view override(ERC721, ERC721URIStorage) tokenApproved(msg.sender, tokenId) returns (string memory) {
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        tokenApproved(msg.sender, tokenId)
+        returns (string memory)
+    {
         return super.tokenURI(tokenId);
     }
 
@@ -202,5 +201,4 @@ contract Role is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
         System(s_systemAddress).registerFundRequest(msg.sender, address(this), amountUsd);
         emit Role__FundRequested(statement, amountUsd);
     }
-
 }
