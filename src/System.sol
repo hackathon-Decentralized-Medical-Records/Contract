@@ -9,6 +9,8 @@ import {AutomationCompatibleInterface} from
 import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
+import {ModuleReservation} from "./modules/ModuleReservation.sol";
+
 import {Role} from "./Role.sol";
 import {LibTypeDef} from "../src/utils/LibTypeDef.sol";
 
@@ -33,11 +35,13 @@ import {LibTypeDef} from "../src/utils/LibTypeDef.sol";
 // private
 // view & pure functions
 
-contract System is VRFConsumerBaseV2, AutomationCompatibleInterface, ReentrancyGuard {
+contract System is VRFConsumerBaseV2, AutomationCompatibleInterface, ReentrancyGuard ,ModuleReservation{
     /**
      * Errors
      */
     error System__UpkeepNotNeeded();
+    error System__TransferFail();
+    error System__NoReservation();
 
     /**
      * State Variables
@@ -89,7 +93,7 @@ contract System is VRFConsumerBaseV2, AutomationCompatibleInterface, ReentrancyG
         uint256 interval,
         uint32 callbackGasLimit,
         address vrfCoordinatorV2
-    ) VRFConsumerBaseV2(vrfCoordinatorV2) {
+    ) ModuleReservation() VRFConsumerBaseV2(vrfCoordinatorV2) {
         s_priceFeed = AggregatorV3Interface(PriceFeed);
         s_lastTimeStamp = block.timestamp;
         s_countingState = LibTypeDef.CountingState.OFF;
@@ -168,13 +172,14 @@ contract System is VRFConsumerBaseV2, AutomationCompatibleInterface, ReentrancyG
         public
         view
         override
-        returns (bool upkeepNeeded, bytes memory /* performData */ )
+        returns (bool upkeepNeeded, bytes memory  performData )
     {
         bool isOff = s_countingState == LibTypeDef.CountingState.OFF;
         bool TimePassed = block.timestamp - s_lastTimeStamp >= i_interval;
         bool hasPlayer = s_contributionInfo.length > 0;
         bool hasBalance = s_contributionTotalAmount > 0 && address(this).balance >= s_contributionTotalAmount;
         upkeepNeeded = isOff && TimePassed && hasPlayer && hasBalance;
+        performData = "";
     }
 
     function performUpkeep(bytes calldata /* performData */ ) external {
@@ -213,26 +218,26 @@ contract System is VRFConsumerBaseV2, AutomationCompatibleInterface, ReentrancyG
             address to = payable(contributionInfo.provider);
             (bool success,) = to.call{value: amountInWei}("");
             if (!success) {
-                s_TransferFailAddressToAmountInWei[to] = amountInWei;
+                s_TransferFailAddressToAmountInWei[to] += amountInWei;
             }
             totalTransferAmountInWei += amountInWei;
 
             to = payable(contributionInfo.initiator);
             (success,) = to.call{value: amountInWei}("");
             if (!success) {
-                s_TransferFailAddressToAmountInWei[to] = amountInWei;
+                s_TransferFailAddressToAmountInWei[to] += amountInWei;
             }
             totalTransferAmountInWei += amountInWei;
 
             to = payable(contributionInfo.patient);
             (success,) = to.call{value: amountInWei}("");
             if (!success) {
-                s_TransferFailAddressToAmountInWei[to] = amountInWei;
+                s_TransferFailAddressToAmountInWei[to] += amountInWei;
             }
             totalTransferAmountInWei += amountInWei;
             s_contributionTotalAmount -= totalTransferAmountInWei;
         }
-        emit System__LotteryCompleted();
         s_countingState = LibTypeDef.CountingState.ON;
-    }
+        emit System__LotteryCompleted();
+    } 
 }

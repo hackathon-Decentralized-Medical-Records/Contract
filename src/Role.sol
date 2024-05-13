@@ -51,7 +51,6 @@ contract Role is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
     bool private s_needFund;
     mapping(address => bool) private s_approvedMintState;
     mapping(uint256 tokenId => string) private s_tokenIdToMedicalInfo;
-    mapping(address provider => bool) private s_reservationState;
     mapping(uint256 tokenId => mapping(address provider => bool)) private s_tokenToProviderApprovalState;
 
     /**
@@ -59,10 +58,6 @@ contract Role is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
      */
     event Role__MaterialAddedAndCancelAddRight(address indexed sender, uint256 indexed tokenId);
     event Role__ApproveMintAddress(address indexed user);
-    event Role__ReservationAppointed(
-        address indexed user, address indexed provider, uint256 indexed appointTimeSinceEpoch
-    );
-    event Role__AppointedFinished(address indexed user, address indexed provider);
     event Role__TokenAccessApproved(uint256 indexed tokenId, address indexed provider);
     event Role__FundRequested(string indexed statement, uint256 indexed amountInUsd);
 
@@ -164,36 +159,6 @@ contract Role is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
 
     function supportsInterface(bytes4 interfaceId) public view override(ERC721, ERC721URIStorage) returns (bool) {
         return super.supportsInterface(interfaceId);
-    }
-
-    function appointReservation(address provider, uint256 appointTimeSinceEpoch, uint256 reservationFee)
-        public
-        payable
-        onlyOwner
-        onlyPatient
-    {
-        s_reservationState[provider] = true;
-        (bool success,) = provider.call{value: reservationFee}("");
-        if (!success) {
-            revert Role__TransferFail();
-        }
-
-        emit Role__ReservationAppointed(msg.sender, provider, appointTimeSinceEpoch);
-    }
-
-    //TODO: disapprove provider access to token
-    function finishAppointment(address provider, uint256 AppointmentFee) public payable onlyOwner onlyPatient {
-        s_reservationState[provider] = false;
-        (bool success,) = provider.call{value: AppointmentFee}("");
-        if (!success) {
-            revert Role__TransferFail();
-        }
-
-        emit Role__AppointedFinished(msg.sender, provider);
-    }
-
-    function getReservationStatus(address provider) public view returns (bool) {
-        return s_reservationState[provider];
     }
 
     function requestFund(string memory statement, uint256 amountUsd) public onlyOwner onlyPatient {

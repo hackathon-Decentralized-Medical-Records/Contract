@@ -11,9 +11,9 @@ contract DeploySystem is Script {
     function run() external returns (System) {
         helperConfig = new HelperConfig();
 
-        (,,,,,,, address priceFeed) = helperConfig.activeNetworkConfig();
+        (uint64 subscriptionId, bytes32 gasLane, uint256 automationUpdateInterval, uint32 callbackGasLimit, address vrfCoordinatorV2, /* address link */, /* uint256 deployerKey */, address priceFeed) = helperConfig.activeNetworkConfig();
         vm.startBroadcast();
-        System system = new System(priceFeed);
+        System system = new System(priceFeed, subscriptionId, gasLane, automationUpdateInterval, callbackGasLimit, vrfCoordinatorV2);
         vm.stopBroadcast();
         return system;
     }
