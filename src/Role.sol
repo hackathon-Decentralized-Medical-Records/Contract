@@ -5,7 +5,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {System} from "./System.sol";
+import {ModuleMain} from "./ModuleMain.sol";
 import {LibTypeDef} from "../src/utils/LibTypeDef.sol";
 
 // Layout of Contract:
@@ -163,7 +163,7 @@ contract Role is ERC721, ERC721URIStorage, Ownable, ReentrancyGuard {
 
     function requestFund(string memory statement, uint256 amountUsd) public onlyOwner onlyPatient {
         s_needFund = true;
-        System(s_systemAddress).registerFundRequest(msg.sender, address(this), amountUsd);
+        ModuleMain(s_systemAddress).registerFundRequest(msg.sender, address(this), amountUsd);
         emit Role__FundRequested(statement, amountUsd);
     }
 }
