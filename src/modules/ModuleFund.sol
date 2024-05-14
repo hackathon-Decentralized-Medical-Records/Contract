@@ -10,7 +10,7 @@ contract ModuleFund is ModuleManage {
     uint256 private s_fundInfoCounter;
     AggregatorV3Interface private s_priceFeed;
 
-    constructor(address priceFeed) ModuleManage() {
+    constructor(address priceFeed) {
         s_priceFeed = AggregatorV3Interface(priceFeed);
     }
 

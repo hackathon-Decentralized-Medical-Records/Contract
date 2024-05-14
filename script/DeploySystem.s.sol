@@ -22,8 +22,9 @@ contract DeployModuleMain is Script {
             address priceFeed
         ) = helperConfig.activeNetworkConfig();
         vm.startBroadcast();
-        ModuleMain system =
-            new ModuleMain(priceFeed, subscriptionId, gasLane, automationUpdateInterval, callbackGasLimit, vrfCoordinatorV2);
+        ModuleMain system = new ModuleMain(
+            priceFeed, subscriptionId, gasLane, automationUpdateInterval, callbackGasLimit, vrfCoordinatorV2
+        );
         vm.stopBroadcast();
         return system;
     }

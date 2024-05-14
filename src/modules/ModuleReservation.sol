@@ -15,11 +15,7 @@ contract ModuleReservation is ModuleJudge, ReentrancyGuard {
     );
     event ModuleReservation__AppointedFinished(address indexed user, address indexed provider, uint256 amountInWei);
 
-    constructor(uint64 subscriptionId,
-        bytes32 gasLane, // keyHash
-        uint32 callbackGasLimit,
-        address vrfCoordinatorV2,
-        uint256 interval) ModuleJudge(subscriptionId, gasLane, callbackGasLimit, vrfCoordinatorV2, interval) {}
+    constructor() ModuleJudge() {}
 
     function appointReservation(address provider, uint256 appointTimeSinceEpoch, uint256 reservationFee)
         public

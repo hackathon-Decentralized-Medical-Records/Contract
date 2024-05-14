@@ -24,13 +24,7 @@ contract ModuleContribution is ModuleVRF, VRFConsumerBaseV2, AutomationCompatibl
     event ModuleContribution__UpkeepPerformed(uint256 requestId, uint32 numWords);
     event ModuleContribution__LotteryCompleted();
 
-    constructor(
-        uint64 subscriptionId,
-        bytes32 gasLane, // keyHash
-        uint32 callbackGasLimit,
-        address vrfCoordinatorV2,
-        uint256 interval
-    ) ModuleVRF(subscriptionId, gasLane, callbackGasLimit, vrfCoordinatorV2) VRFConsumerBaseV2(vrfCoordinatorV2) {
+    constructor(address vrfCoordinatorV2, uint256 interval) VRFConsumerBaseV2(vrfCoordinatorV2) {
         s_lastTimeStamp = block.timestamp;
         s_countingState = LibTypeDef.CountingState.OFF;
         i_interval = interval;

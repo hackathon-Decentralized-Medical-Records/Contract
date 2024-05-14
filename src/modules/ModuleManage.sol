@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 import {LibTypeDef} from "../../src/utils/LibTypeDef.sol";
 import {Role} from "./../Role.sol";
 
-contract ModuleManage {
+abstract contract ModuleManage {
     mapping(address user => address) internal s_userToContract;
     mapping(address user => LibTypeDef.RoleType) internal s_userToRoleType;
 
