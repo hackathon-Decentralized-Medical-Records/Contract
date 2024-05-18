@@ -35,7 +35,7 @@ contract ModuleMain is ModuleReservation, ModuleContribution, ModuleFund {
         uint256 interval,
         uint32 callbackGasLimit,
         address vrfCoordinatorV2
-    ) ModuleReservation() ModuleContribution(vrfCoordinatorV2, interval) ModuleFund(PriceFeed) {
+    ) ModuleReservation(vrfCoordinatorV2) ModuleContribution(vrfCoordinatorV2, interval) ModuleFund(PriceFeed) {
         setVRFConfig(subscriptionId, gasLane, callbackGasLimit, vrfCoordinatorV2);
     }
 }

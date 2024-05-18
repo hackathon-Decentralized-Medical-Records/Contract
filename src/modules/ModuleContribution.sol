@@ -65,7 +65,7 @@ contract ModuleContribution is ModuleVRF, VRFConsumerBaseV2, AutomationCompatibl
         emit ModuleContribution__UpkeepPerformed(requestId, numSize);
     }
 
-    function fulfillRandomWords(uint256, /* requestId */ uint256[] memory randomWords) internal override {
+    function fulfillRandomWords(uint256 /* requestId */, uint256[] memory randomWords) internal virtual override {
         uint256 length = randomWords.length;
 
         for (uint256 i = 0; i < length; i++) {
