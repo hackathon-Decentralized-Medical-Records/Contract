@@ -3,28 +3,26 @@ pragma solidity ^0.8.25;
 
 import {LibTypeDef} from "../../src/utils/LibTypeDef.sol";
 import {ModuleVRF} from "./ModuleVRF.sol";
-import {VRFCoordinatorV2Interface} from "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import {AutomationCompatibleInterface} from
     "@chainlink/contracts/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";
 
-contract ModuleContribution is ModuleVRF, VRFConsumerBaseV2, AutomationCompatibleInterface {
+contract ModuleContribution is ModuleVRF, AutomationCompatibleInterface {
     error ModuleContribution__UpkeepNotNeeded();
 
     mapping(address => uint256) private s_userToContributionTimes;
     mapping(bytes32 => uint256) private s_addressTupleToContributionIndex;
     LibTypeDef.ContributionInfo[] private s_tempContributionInfo;
-    LibTypeDef.CountingState private s_countingState;
+    LibTypeDef.CountingState internal s_countingState;
     uint256 private s_lastTimeStamp;
     uint256 private immutable i_interval;
-    LibTypeDef.ContributionInfo[] private s_contributionInfo;
-    uint256 private s_contributionTotalAmount;
-    mapping(address => uint256) private s_TransferFailAddressToAmountInWei;
+    LibTypeDef.ContributionInfo[] internal s_contributionInfo;
+    uint256 internal s_contributionTotalAmount;
+    mapping(address => uint256) internal s_TransferFailAddressToAmountInWei;
 
     event ModuleContribution__UpkeepPerformed(uint256 requestId, uint32 numWords);
     event ModuleContribution__LotteryCompleted();
 
-    constructor(address vrfCoordinatorV2, uint256 interval) VRFConsumerBaseV2(vrfCoordinatorV2) {
+    constructor(uint256 interval) {
         s_lastTimeStamp = block.timestamp;
         s_countingState = LibTypeDef.CountingState.OFF;
         i_interval = interval;
@@ -63,41 +61,5 @@ contract ModuleContribution is ModuleVRF, VRFConsumerBaseV2, AutomationCompatibl
         uint256 requestId = super.requestVRF(numSize);
 
         emit ModuleContribution__UpkeepPerformed(requestId, numSize);
-    }
-
-    function fulfillRandomWords(uint256 /* requestId */, uint256[] memory randomWords) internal virtual override {
-        uint256 length = randomWords.length;
-
-        for (uint256 i = 0; i < length; i++) {
-            uint256 index = randomWords[i] % s_contributionInfo.length;
-            LibTypeDef.ContributionInfo memory contributionInfo = s_contributionInfo[index];
-
-            uint256 amountInWei = contributionInfo.amountInWei;
-            uint256 totalTransferAmountInWei = 0;
-
-            address to = payable(contributionInfo.provider);
-            (bool success,) = to.call{value: amountInWei}("");
-            if (!success) {
-                s_TransferFailAddressToAmountInWei[to] += amountInWei;
-            }
-            totalTransferAmountInWei += amountInWei;
-
-            to = payable(contributionInfo.initiator);
-            (success,) = to.call{value: amountInWei}("");
-            if (!success) {
-                s_TransferFailAddressToAmountInWei[to] += amountInWei;
-            }
-            totalTransferAmountInWei += amountInWei;
-
-            to = payable(contributionInfo.patient);
-            (success,) = to.call{value: amountInWei}("");
-            if (!success) {
-                s_TransferFailAddressToAmountInWei[to] += amountInWei;
-            }
-            totalTransferAmountInWei += amountInWei;
-            s_contributionTotalAmount -= totalTransferAmountInWei;
-        }
-        s_countingState = LibTypeDef.CountingState.ON;
-        emit ModuleContribution__LotteryCompleted();
     }
 }

@@ -17,8 +17,6 @@ contract ModuleReservation is ModuleJudge{
     event ModuleReservation__ReservationCanceled(address indexed user, address indexed provider, uint256 amountInWei);
     event ModuleReservation__AppointmentStarted(address indexed user, address indexed provider,uint256 amountInWei);
 
-    constructor(address vrfCoordinatorV2) ModuleJudge(vrfCoordinatorV2) {}
-
     function requestReservation(address provider, uint256 appointTimeSinceEpoch)
         public
         payable

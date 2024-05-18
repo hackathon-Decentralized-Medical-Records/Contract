@@ -4,7 +4,7 @@ pragma solidity ^0.8.25;
 import {ModuleVRF} from "./ModuleVRF.sol";
 import {VRFConsumerBaseV2} from "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 
-contract ModuleJudge is ModuleVRF, VRFConsumerBaseV2{
+contract ModuleJudge is ModuleVRF{
     // 定义每个provider每天的最大参与评价次数上限
     uint256 public constant DAILY_REVIEWS_LIMIT = 10; 
     // 服务提供者的地址
@@ -23,8 +23,6 @@ contract ModuleJudge is ModuleVRF, VRFConsumerBaseV2{
     // 记录每个服务提供者每天收到的评价数量和时间戳
     mapping(address => uint256) private s_providerDailyReviewsCount;
     mapping(address => uint256) private s_providerLastReviewTimestamp;
-
-    constructor(address vrfCoordinatorV2) ModuleVRF() VRFConsumerBaseV2(vrfCoordinatorV2) {}
 
     // 添加新的评价请求
     function requestReview(address provider) external returns (uint256 requestId) {
@@ -53,6 +51,7 @@ contract ModuleJudge is ModuleVRF, VRFConsumerBaseV2{
 
         return requestId;
     }
+    /*
     
     // 处理VRF响应，执行评价
     function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal virtual override {
@@ -80,4 +79,7 @@ contract ModuleJudge is ModuleVRF, VRFConsumerBaseV2{
     function _scheduleReview(address provider, uint256 delayTime) internal {
         // ... 实现评价的调度逻辑
     }
+
+
+    */
 }
