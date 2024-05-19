@@ -17,6 +17,10 @@ abstract contract ModuleVRF {
         );
     }
 
+    // Chainlink VRF请求id数组
+    uint256[] internal s_requestId;
+    mapping(uint256 requestId => address) private s_requestIdToProvider;
+
     function setVRFConfig(
         uint64 subscriptionId,
         bytes32 gasLane, // keyHash
@@ -27,5 +31,13 @@ abstract contract ModuleVRF {
         s_gasLane = gasLane;
         s_subscriptionId = subscriptionId;
         s_callbackGasLimit = callbackGasLimit;
+    }
+
+    function getRequestIdToProvider(uint256 requestId) internal view returns (address provider) {
+        return s_requestIdToProvider[requestId];
+    }
+
+    function setRequestidToProvider(uint256 requestId, address provider) internal {
+        s_requestIdToProvider[requestId] = provider;
     }
 }

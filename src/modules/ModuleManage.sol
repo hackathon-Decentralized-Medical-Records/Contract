@@ -24,8 +24,21 @@ abstract contract ModuleManage {
     }
 
     function _addNewUserContractToSystem(LibTypeDef.RoleType roleType) private {
-        Role role = new Role(msg.sender, address(this), roleType);
-        s_userToContract[msg.sender] = address(role);
-        emit System__NewUserContractAdded(msg.sender, address(role), uint8(roleType));
+        bytes memory bytecode = type(Role).creationCode;
+        bytecode = abi.encodePacked(bytecode, abi.encode(msg.sender, address(this), roleType));
+
+        address roleAddress;
+        // Compute the address for the new contract, this step is optional if you don't need to know the address beforehand.
+        bytes32 salt = keccak256(abi.encodePacked(msg.sender, address(this), roleType));
+
+        // Using create2 to deploy a new Role contract
+        assembly {
+            roleAddress := create2(0, add(bytecode, 0x20), mload(bytecode), salt)
+        }
+
+        require(roleAddress != address(0), "Failed to create the Role contract");
+
+        s_userToContract[msg.sender] = roleAddress;
+        emit System__NewUserContractAdded(msg.sender, roleAddress, uint8(roleType));
     }
 }

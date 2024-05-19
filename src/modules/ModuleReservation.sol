@@ -3,7 +3,7 @@ pragma solidity ^0.8.25;
 
 import {ModuleJudge} from "../modules/ModuleJudge.sol";
 
-contract ModuleReservation is ModuleJudge{
+contract ModuleReservation is ModuleJudge {
     error ModuleReservation__NoReservation();
     error ModuleReservation__TransferFail();
 
@@ -15,12 +15,9 @@ contract ModuleReservation is ModuleJudge{
     );
     event ModuleReservation__AppointmentFinished(address indexed user, address indexed provider, uint256 amountInWei);
     event ModuleReservation__ReservationCanceled(address indexed user, address indexed provider, uint256 amountInWei);
-    event ModuleReservation__AppointmentStarted(address indexed user, address indexed provider,uint256 amountInWei);
+    event ModuleReservation__AppointmentStarted(address indexed user, address indexed provider, uint256 amountInWei);
 
-    function requestReservation(address provider, uint256 appointTimeSinceEpoch)
-        public
-        payable
-    {
+    function requestReservation(address provider, uint256 appointTimeSinceEpoch) public payable {
         s_userToReservationAddress[msg.sender] = provider;
         s_userToProviderFee[msg.sender][provider] = msg.value;
         emit ModuleReservation__ReservationRequested(msg.sender, provider, appointTimeSinceEpoch);
@@ -42,7 +39,7 @@ contract ModuleReservation is ModuleJudge{
             revert ModuleReservation__NoReservation();
         }
         uint256 amount = s_userToProviderFee[msg.sender][provider];
-        (bool success, ) = provider.call{value: amount}("");
+        (bool success,) = provider.call{value: amount}("");
         s_userToProviderFee[msg.sender][provider] = 0;
         if (!success) {
             revert ModuleReservation__TransferFail();
@@ -64,5 +61,4 @@ contract ModuleReservation is ModuleJudge{
     function getReservationInfo() public view returns (address) {
         return s_userToReservationAddress[msg.sender];
     }
-
 }

@@ -12,12 +12,12 @@ contract ModuleContribution is ModuleVRF, AutomationCompatibleInterface {
     mapping(address => uint256) private s_userToContributionTimes;
     mapping(bytes32 => uint256) private s_addressTupleToContributionIndex;
     LibTypeDef.ContributionInfo[] private s_tempContributionInfo;
-    LibTypeDef.CountingState internal s_countingState;
+    LibTypeDef.CountingState private s_countingState;
     uint256 private s_lastTimeStamp;
     uint256 private immutable i_interval;
-    LibTypeDef.ContributionInfo[] internal s_contributionInfo;
-    uint256 internal s_contributionTotalAmount;
-    mapping(address => uint256) internal s_TransferFailAddressToAmountInWei;
+    LibTypeDef.ContributionInfo[] private s_contributionInfo;
+    uint256 private s_contributionTotalAmount;
+    mapping(address => uint256) private s_TransferFailAddressToAmountInWei;
 
     event ModuleContribution__UpkeepPerformed(uint256 requestId, uint32 numWords);
     event ModuleContribution__LotteryCompleted();
@@ -61,5 +61,41 @@ contract ModuleContribution is ModuleVRF, AutomationCompatibleInterface {
         uint256 requestId = super.requestVRF(numSize);
 
         emit ModuleContribution__UpkeepPerformed(requestId, numSize);
+    }
+
+    function contributionLottery(uint256[] memory randomWords) public payable {
+        uint256 length = randomWords.length;
+
+        for (uint256 i = 0; i < length; i++) {
+            uint256 index = randomWords[i] % s_contributionInfo.length;
+            LibTypeDef.ContributionInfo memory contributionInfo = s_contributionInfo[index];
+
+            uint256 amountInWei = contributionInfo.amountInWei;
+            uint256 totalTransferAmountInWei = 0;
+
+            address to = payable(contributionInfo.provider);
+            (bool success,) = to.call{value: amountInWei}("");
+            if (!success) {
+                s_TransferFailAddressToAmountInWei[to] += amountInWei;
+            }
+            totalTransferAmountInWei += amountInWei;
+
+            to = payable(contributionInfo.initiator);
+            (success,) = to.call{value: amountInWei}("");
+            if (!success) {
+                s_TransferFailAddressToAmountInWei[to] += amountInWei;
+            }
+            totalTransferAmountInWei += amountInWei;
+
+            to = payable(contributionInfo.patient);
+            (success,) = to.call{value: amountInWei}("");
+            if (!success) {
+                s_TransferFailAddressToAmountInWei[to] += amountInWei;
+            }
+            totalTransferAmountInWei += amountInWei;
+            s_contributionTotalAmount -= totalTransferAmountInWei;
+        }
+        s_countingState = LibTypeDef.CountingState.ON;
+        emit ModuleContribution__LotteryCompleted();
     }
 }

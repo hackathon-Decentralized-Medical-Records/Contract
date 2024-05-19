@@ -43,39 +43,13 @@ contract ModuleMain is VRFConsumerBaseV2, ModuleReservation, ModuleContribution,
         setVRFConfig(subscriptionId, gasLane, callbackGasLimit, vrfCoordinatorV2);
     }
 
-    function fulfillRandomWords(uint256 /* requestId */, uint256[] memory randomWords) internal virtual override {
-        uint256 length = randomWords.length;
-
-        for (uint256 i = 0; i < length; i++) {
-            uint256 index = randomWords[i] % s_contributionInfo.length;
-            LibTypeDef.ContributionInfo memory contributionInfo = s_contributionInfo[index];
-
-            uint256 amountInWei = contributionInfo.amountInWei;
-            uint256 totalTransferAmountInWei = 0;
-
-            address to = payable(contributionInfo.provider);
-            (bool success,) = to.call{value: amountInWei}("");
-            if (!success) {
-                s_TransferFailAddressToAmountInWei[to] += amountInWei;
-            }
-            totalTransferAmountInWei += amountInWei;
-
-            to = payable(contributionInfo.initiator);
-            (success,) = to.call{value: amountInWei}("");
-            if (!success) {
-                s_TransferFailAddressToAmountInWei[to] += amountInWei;
-            }
-            totalTransferAmountInWei += amountInWei;
-
-            to = payable(contributionInfo.patient);
-            (success,) = to.call{value: amountInWei}("");
-            if (!success) {
-                s_TransferFailAddressToAmountInWei[to] += amountInWei;
-            }
-            totalTransferAmountInWei += amountInWei;
-            s_contributionTotalAmount -= totalTransferAmountInWei;
+    function fulfillRandomWords(uint256 requestId, uint256[] memory randomWords) internal override {
+        // 获取提供者地址
+        address provider = getRequestIdToProvider(requestId); // 根据requestId来确定哪个提供者
+        if (provider == address(0)) {
+            contributionLottery(randomWords);
+        } else {
+            judgeLottery(provider, randomWords);
         }
-        s_countingState = LibTypeDef.CountingState.ON;
-        emit ModuleContribution__LotteryCompleted();
     }
 }
