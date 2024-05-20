@@ -10,7 +10,7 @@ contract ModuleContribution is ModuleVRF, AutomationCompatibleInterface {
     error ModuleContribution__UpkeepNotNeeded();
 
     mapping(address => uint256) private s_userToContributionTimes;
-    mapping(bytes32 => uint256) private s_addressTupleToContributionIndex;
+    mapping(bytes32 => int256) private s_addressTupleToContributionIndex;
     LibTypeDef.ContributionInfo[] private s_tempContributionInfo;
     LibTypeDef.CountingState private s_countingState;
     uint256 private s_lastTimeStamp;
@@ -21,6 +21,8 @@ contract ModuleContribution is ModuleVRF, AutomationCompatibleInterface {
 
     event ModuleContribution__UpkeepPerformed(uint256 requestId, uint32 numWords);
     event ModuleContribution__LotteryCompleted();
+    event ModuleContribution__ContributionRegistered(address indexed provider, address indexed initiator, address indexed patient, uint256 amountInWei);
+    event ModuleContribution__ContributionAlreadyRegistered(address indexed provider, address indexed initiator, address indexed patient, uint256 amountInWei);
 
     constructor(uint256 interval) {
         s_lastTimeStamp = block.timestamp;
@@ -49,7 +51,7 @@ contract ModuleContribution is ModuleVRF, AutomationCompatibleInterface {
             revert ModuleContribution__UpkeepNotNeeded();
         }
 
-        s_countingState = LibTypeDef.CountingState.OFF;
+        s_countingState = LibTypeDef.CountingState.ON;
         s_lastTimeStamp = block.timestamp;
 
         uint32 numSize = uint32(s_contributionInfo.length / 10);
@@ -94,8 +96,43 @@ contract ModuleContribution is ModuleVRF, AutomationCompatibleInterface {
             }
             totalTransferAmountInWei += amountInWei;
             s_contributionTotalAmount -= totalTransferAmountInWei;
+
+            bytes32 key = keccak256(abi.encodePacked(contributionInfo.provider,contributionInfo.initiator,contributionInfo.patient));
+            s_addressTupleToContributionIndex[key] = -1;
         }
-        s_countingState = LibTypeDef.CountingState.ON;
+        s_countingState = LibTypeDef.CountingState.OFF;
+        s_contributionInfo = s_tempContributionInfo;
+        s_tempContributionInfo = new LibTypeDef.ContributionInfo[](0);
         emit ModuleContribution__LotteryCompleted();
+    }
+
+    function contributeRegistration(address provider, address initiator, address patient, uint256 amountInWei) public payable {
+        LibTypeDef.ContributionInfo memory contributionInfo = LibTypeDef.ContributionInfo(
+            patient,
+            initiator,
+            provider,
+            amountInWei,
+            block.timestamp
+        );
+        s_userToContributionTimes[patient] += 1;
+        s_userToContributionTimes[initiator] += 1;
+        s_userToContributionTimes[provider] += 1;
+
+        s_contributionTotalAmount += amountInWei;
+        bytes32 key = keccak256(abi.encodePacked(provider,initiator,patient));
+        if(s_addressTupleToContributionIndex[key] != -1) {
+            emit ModuleContribution__ContributionAlreadyRegistered(provider, initiator, patient, amountInWei);
+            return;
+        }
+        if(s_countingState == LibTypeDef.CountingState.OFF) {
+            s_contributionInfo.push(contributionInfo);
+            s_addressTupleToContributionIndex[key] = int256(s_contributionInfo.length) - 1;
+        }
+        else {
+            s_tempContributionInfo.push(contributionInfo);
+            s_addressTupleToContributionIndex[key] = int256(s_tempContributionInfo.length) - 1;
+        }
+
+        emit ModuleContribution__ContributionRegistered(provider, initiator, patient, amountInWei);
     }
 }
