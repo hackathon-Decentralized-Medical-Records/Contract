@@ -102,7 +102,7 @@ contract ModuleContribution is ModuleVRF, AutomationCompatibleInterface {
         }
         s_countingState = LibTypeDef.CountingState.OFF;
         s_contributionInfo = s_tempContributionInfo;
-        s_tempContributionInfo = new LibTypeDef.ContributionInfo[](0);
+        delete s_tempContributionInfo;
         emit ModuleContribution__LotteryCompleted();
     }
 
