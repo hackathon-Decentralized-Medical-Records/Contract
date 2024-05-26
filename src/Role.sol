@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.25;
 
-import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/extensions/ERC1155URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "./ModuleMain.sol";
 import "../src/utils/LibTypeDef.sol";
 
-contract Role is ERC1155, Ownable, ReentrancyGuard {
+contract Role is ERC1155URIStorage, Ownable, ReentrancyGuard {
     error Role__improperRole(address user, uint8 roleType);
     error Role__mintNotApproved(address user);
     error Role__tokenNotApproved(address provider, uint256 id);
@@ -46,7 +46,7 @@ contract Role is ERC1155, Ownable, ReentrancyGuard {
     }
 
     constructor(address user, address systemAddress, LibTypeDef.RoleType roleType)
-        ERC1155("your_metadata_URI")
+        ERC1155("")
         Ownable(user)
     {
         require(
