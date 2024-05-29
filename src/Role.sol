@@ -18,6 +18,7 @@ contract Role is ERC1155URIStorage, Ownable, ReentrancyGuard {
     bool private s_needFund;
     mapping(address => bool) private s_approvedMintState;
     mapping(uint256 => mapping(address => bool)) private s_idToProviderApprovalState;
+    uint256 public s_idCounter = 0;
 
     event Role__ApproveMintAddress(address indexed user);
     event Role__MaterialAddedAndCancelAddRight(address indexed sender, uint256 indexed id);
@@ -69,10 +70,12 @@ contract Role is ERC1155URIStorage, Ownable, ReentrancyGuard {
         emit Role__TokenAccessApproved(id, provider);
     }
 
-    function addMaterial(uint256 id, uint256 amount, bytes memory data) public mintApproved(_msgSender()) {
-        _mint(owner(), id, amount, data);
+    function addMaterial(bytes memory data) public mintApproved(_msgSender()) {
+        _mint(owner(), s_idCounter, 1, data);
+        _setURI(s_idCounter, string(data));
+        s_idCounter++;
         s_approvedMintState[_msgSender()] = false;
-        emit Role__MaterialAddedAndCancelAddRight(_msgSender(), id);
+        emit Role__MaterialAddedAndCancelAddRight(_msgSender(), s_idCounter - 1);
     }
 
     function requestFund(string memory statement, uint256 amountUsd) public onlyOwner onlyPatient {

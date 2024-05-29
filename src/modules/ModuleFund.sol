@@ -7,7 +7,7 @@ import {ModuleManage} from "./ModuleManage.sol";
 
 contract ModuleFund is ModuleManage {
     LibTypeDef.FundInfo[] private s_fundInfo;
-    uint256 private s_fundInfoCounter;
+    uint256 public s_fundInfoCounter = 0;
     AggregatorV3Interface private s_priceFeed;
 
     constructor(address priceFeed) {
@@ -22,6 +22,10 @@ contract ModuleFund is ModuleManage {
     event System__NewDonation(uint256 indexed index, address user, address indexed sender, uint256 amountInWei);
     event System__FundWithdrawn(uint256 indexed index, address indexed user, uint256 amountInWei);
 
+    function getFundInfo(uint256 index) public view returns (LibTypeDef.FundInfo memory) {
+        return s_fundInfo[index];
+    }
+
     function registerFundRequest(address user, address contractAddress, uint256 amountInUsd) public {
         if (s_userToContract[user] != contractAddress) {
             revert();
@@ -30,7 +34,7 @@ contract ModuleFund is ModuleManage {
         fundInfo.userAddress = user;
         fundInfo.startTimeSinceEpoch = block.timestamp;
         (uint80 roundId, int256 answer,,,) = s_priceFeed.latestRoundData();
-        fundInfo.requiredAmountInWei = uint256(answer) * 1e18 * amountInUsd / uint256(s_priceFeed.decimals());
+        fundInfo.requiredAmountInWei =  1e18 * amountInUsd * uint256(10 ** s_priceFeed.decimals()) / uint256(answer);
         fundInfo.endTimeSinceEpoch = 0;
 
         s_fundInfo.push(fundInfo);

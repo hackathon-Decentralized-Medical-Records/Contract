@@ -12,7 +12,7 @@ contract DeployModuleMain is Script {
         helperConfig = new HelperConfig();
 
         (
-            uint64 subscriptionId,
+            uint64  subscriptionId,
             bytes32 gasLane,
             uint256 automationUpdateInterval,
             uint32 callbackGasLimit,

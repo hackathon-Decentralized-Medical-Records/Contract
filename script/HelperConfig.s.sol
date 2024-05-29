@@ -65,11 +65,13 @@ contract HelperConfig is Script {
         //ETH/USD = 3000,00000000
         MockV3Aggregator mockV3Aggregator = new MockV3Aggregator(8, 3e11);
         vm.stopBroadcast();
+        uint64 subId = VRFCoordinatorV2Mock(vrfCoordinatorV2Mock)
+            .createSubscription();
 
         emit HelperConfig__CreatedMockVRFCoordinator(address(vrfCoordinatorV2Mock));
 
         anvilNetworkConfig = LibTypeDef.NetworkConfig({
-            subscriptionId: 0, // If left as 0, our scripts will create one!
+            subscriptionId: subId, // If left as 0, our scripts will create one!
             gasLane: 0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c, // doesn't really matter
             automationUpdateInterval: 30, // 30 seconds
             callbackGasLimit: 500000, // 500,000 gas
